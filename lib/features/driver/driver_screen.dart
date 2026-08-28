@@ -984,47 +984,31 @@ class _JobOfferCardState extends ConsumerState<_JobOfferCard> {
                   ],
                 ),
               ),
-              // Buttons
+              // Accept button — no reject/decline option; if this driver
+              // doesn't act, the 30s countdown auto-declines and the offer
+              // moves to the next-nearest ambulance (see initState above).
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _acting ? null : _decline,
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                          side: const BorderSide(color: AppColors.error),
-                          foregroundColor: AppColors.error,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Decline',
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _acting ? null : _accept,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.statusAvailable,
+                      minimumSize: const Size(0, 48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _acting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Accept',
                             style: TextStyle(fontWeight: FontWeight.w700)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _acting ? null : _accept,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.statusAvailable,
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: _acting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text('Accept',
-                                style: TextStyle(fontWeight: FontWeight.w700)),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
