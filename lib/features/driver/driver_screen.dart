@@ -22,6 +22,7 @@ import '../../widgets/chat_list_view.dart';
 import '../../widgets/chat_sheet.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/incident_history_list.dart';
+import '../../widgets/priority_badge.dart';
 import '../../widgets/profile_edit_sheet.dart';
 import '../../widgets/status_badge.dart';
 
@@ -1204,6 +1205,8 @@ class _ActiveIncidentCardState extends ConsumerState<_ActiveIncidentCard> {
                         ),
                       ),
                     ),
+                    PriorityBadge(priority: incident.priority.dbValue),
+                    const SizedBox(width: 6),
                     StatusBadge(status: incident.status.dbValue),
                   ],
                 ),

@@ -37,6 +37,12 @@ abstract final class AppColors {
   static const Color success = Color(0xFF2E7D32);
   static const Color warning = Color(0xFFF57F17);
 
+  // Incident priority colours — used for the priority badge
+  static const Color priorityCritical = Color(0xFFB00020); // red
+  static const Color priorityHigh = Color(0xFFE65100);     // deep orange
+  static const Color priorityMedium = Color(0xFFF57F17);   // amber
+  static const Color priorityLow = Color(0xFF757575);      // grey
+
   /// Returns the colour for a given ambulance or incident status string.
   static Color forStatus(String status) => switch (status) {
     'available'          => statusAvailable,
@@ -49,5 +55,13 @@ abstract final class AppColors {
     'busy'               => statusBusy,
     'offline'            => statusOffline,
     _                    => statusOffline,
+  };
+
+  /// Returns the colour for a given incident priority string.
+  static Color forPriority(String priority) => switch (priority) {
+    'critical' => priorityCritical,
+    'high'     => priorityHigh,
+    'low'      => priorityLow,
+    _          => priorityMedium,
   };
 }

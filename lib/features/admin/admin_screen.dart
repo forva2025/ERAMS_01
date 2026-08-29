@@ -18,6 +18,7 @@ import '../../state/dispatcher_provider.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/incident_routes_layer.dart';
+import '../../widgets/priority_badge.dart';
 import '../../widgets/profile_edit_sheet.dart';
 import '../../widgets/status_badge.dart';
 import '../dispatcher/location_picker.dart';
@@ -2545,6 +2546,8 @@ class _PatientRecordCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                PriorityBadge(priority: record.priority),
+                const SizedBox(width: 6),
                 StatusBadge(status: record.status),
               ],
             ),

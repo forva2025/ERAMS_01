@@ -3,22 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/constants/emergency_types.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/patient_provider.dart';
 import '../dispatcher/location_picker.dart';
-
-const _emergencyTypes = [
-  'Cardiac Arrest',
-  'Stroke',
-  'Severe Trauma / Accident',
-  'Difficulty Breathing',
-  'Unconscious / Unresponsive',
-  'Severe Bleeding',
-  'Seizure',
-  'Childbirth Emergency',
-  'Poisoning / Overdose',
-  'Other Emergency',
-];
 
 class NewRequestFormScreen extends ConsumerStatefulWidget {
   const NewRequestFormScreen({super.key});
@@ -99,7 +87,7 @@ class _NewRequestFormScreenState
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 14),
               ),
-              items: _emergencyTypes
+              items: emergencyTypes
                   .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                   .toList(),
               onChanged: (v) => setState(() => _emergencyType = v),

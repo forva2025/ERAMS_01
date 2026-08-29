@@ -28,7 +28,8 @@ class HospitalService {
         .select()
         .eq('assigned_hospital_id', hospitalId)
         .inFilter('status', ['dispatched', 'en_route', 'arrived'])
-        .order('created_at', ascending: false);
+        .order('priority_rank', ascending: true)
+        .order('created_at', ascending: true);
     return (data as List).map((e) => Incident.fromJson(e)).toList();
   }
 

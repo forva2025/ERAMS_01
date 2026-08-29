@@ -43,6 +43,26 @@ enum IncidentStatus {
       this == arrived;
 }
 
+enum IncidentPriority {
+  critical, high, medium, low;
+
+  static IncidentPriority fromString(String value) => switch (value) {
+    'critical' => critical,
+    'high'     => high,
+    'low'      => low,
+    _          => medium,
+  };
+
+  String get dbValue => name;
+
+  String get label => switch (this) {
+    critical => 'Critical',
+    high     => 'High',
+    medium   => 'Medium',
+    low      => 'Low',
+  };
+}
+
 class Incident {
   final String id;
   final String reporterName;
@@ -53,6 +73,7 @@ class Incident {
   final String natureOfEmergency;
   final String patientConditionNotes;
   final IncidentStatus status;
+  final IncidentPriority priority;
   final String? createdBy;
   final String? assignedAmbulanceId;
   final String? assignedHospitalId;
@@ -72,6 +93,7 @@ class Incident {
     required this.natureOfEmergency,
     required this.patientConditionNotes,
     required this.status,
+    required this.priority,
     this.createdBy,
     this.assignedAmbulanceId,
     this.assignedHospitalId,
@@ -93,6 +115,7 @@ class Incident {
       natureOfEmergency: json['nature_of_emergency'] as String? ?? '',
       patientConditionNotes: json['patient_condition_notes'] as String? ?? '',
       status: IncidentStatus.fromString(json['status'] as String? ?? 'logged'),
+      priority: IncidentPriority.fromString(json['priority'] as String? ?? 'medium'),
       createdBy: json['created_by'] as String?,
       assignedAmbulanceId: json['assigned_ambulance_id'] as String?,
       assignedHospitalId: json['assigned_hospital_id'] as String?,

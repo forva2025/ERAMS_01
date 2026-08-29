@@ -255,7 +255,8 @@ class AdminService {
     final data = await supabaseClient
         .from('incidents')
         .select('*, ambulances(plate_number), hospitals(name)')
-        .order('created_at', ascending: false);
+        .order('priority_rank', ascending: true)
+        .order('created_at', ascending: true);
     return (data as List)
         .map((e) => PatientRecord.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -398,6 +399,7 @@ class PatientRecord {
   final String natureOfEmergency;
   final String locationDescription;
   final String status;
+  final String priority;
   final String? ambulancePlate;
   final String? hospitalName;
   final DateTime createdAt;
@@ -412,6 +414,7 @@ class PatientRecord {
     required this.natureOfEmergency,
     required this.locationDescription,
     required this.status,
+    required this.priority,
     this.ambulancePlate,
     this.hospitalName,
     required this.createdAt,
@@ -438,6 +441,7 @@ class PatientRecord {
       natureOfEmergency: json['nature_of_emergency'] as String? ?? '',
       locationDescription: json['location_description'] as String? ?? '',
       status: json['status'] as String? ?? 'logged',
+      priority: json['priority'] as String? ?? 'medium',
       ambulancePlate: ambulance?['plate_number'] as String?,
       hospitalName: hospital?['name'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),

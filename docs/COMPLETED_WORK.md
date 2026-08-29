@@ -771,3 +771,63 @@ driver would actually take.
   dashboard map and Admin Live Map tab show the same highlighted route the
   driver/patient screens already show, and it disappears once the incident
   completes or cancels.
+
+---
+
+## Incident Prioritization ✓ Added
+
+*Feature, 29 Aug 2026 — closes the sole gap found by a 15-component ERMS
+checklist audit against this codebase (`docs/INCIDENT_PRIORITIZATION_PROMPT.md`).
+Every incident was previously handled purely by dispatch distance and
+arrival order, regardless of severity. Scope: display + sort only, per the
+confirmed decision — no dispatch-logic changes (tie-breaking/preemption are
+explicitly out of scope, left as documented future work).*
+
+- [x] New migration `20260829000026_incident_priority.sql`: `priority` column
+      (`critical`/`high`/`medium`/`low`, default `medium`), a generated
+      `priority_rank` column for cheap sorting, and a `BEFORE INSERT` trigger
+      (`set_incident_priority()`) that auto-derives priority from
+      `nature_of_emergency` server-side — can't be skipped or spoofed by
+      either client. Severity mapping is a first pass; **needs a
+      domain-knowledgeable reviewer to sanity-check it before treating it as
+      final.**
+- [x] Unified the dispatcher's and patient's previously-diverging
+      emergency-type dropdowns into one shared canonical list
+      (`lib/core/constants/emergency_types.dart`), removing the drift risk
+      between the two.
+- [x] `IncidentPriority` enum + `priority` field on the `Incident` model,
+      mirroring the existing `IncidentStatus` pattern.
+- [x] New `PriorityBadge` widget (`lib/widgets/priority_badge.dart`), wired in
+      next to the existing `StatusBadge` on every incident-rendering screen:
+      Dispatcher dashboard, Driver job-offer/active-incident cards, Hospital
+      incoming-patient cards, Admin Patients tab.
+- [x] Dispatcher/admin can override the auto-derived priority via a tappable
+      badge (`_PriorityOverride`) in the incident detail sheet
+      (`IncidentService.updateIncidentPriority`); patients get no override.
+- [x] Dispatcher dashboard, Hospital incoming list, and Admin Patients tab now
+      sort priority-first, oldest-first within the same tier (previously
+      newest-first by `created_at` only) — a longer-waiting critical incident
+      no longer gets buried under a newer one of the same severity.
+
+### Needs Team Testing
+- `flutter analyze`: 0 issues (verified in this session).
+- No live Supabase credentials available in this environment — the migration
+  itself is untested against a live database. Team should confirm, after
+  applying the migration:
+  - Logging a "Cardiac Arrest" incident auto-lands as "Critical" with no
+    manual input.
+  - Logging an "Other" incident defaults to "Low".
+  - A patient request for a canonical type that used to be worded
+    differently on the patient form (e.g. what was "Childbirth Emergency")
+    still maps to the correct severity now that both forms share one list.
+  - Dispatcher priority override updates the badge in real time on a second
+    dispatcher session (relies on the existing Realtime subscription on
+    `incidents`, same mechanism the dispatch flow already depends on).
+  - Critical incidents sort to the top of the Dispatcher dashboard, Hospital
+    incoming list, and Admin Patients tab even when logged after
+    lower-priority ones, and same-tier incidents are oldest-first.
+  - A driver's job-offer card shows the priority badge for a patient-initiated
+    request.
+- Sanity-check the severity mapping in `set_incident_priority()` against
+  clinical judgment before relying on it operationally — flagged above and
+  in the migration file itself as a first pass, not a medical judgment.

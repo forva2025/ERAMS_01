@@ -71,7 +71,8 @@ class IncidentService {
         .from('incidents')
         .select()
         .inFilter('status', ['logged', 'pending_acceptance', 'dispatched', 'en_route', 'arrived'])
-        .order('created_at', ascending: false);
+        .order('priority_rank', ascending: true)
+        .order('created_at', ascending: true);
     return (data as List).map((e) => Incident.fromJson(e)).toList();
   }
 
@@ -151,5 +152,14 @@ class IncidentService {
     } on PostgrestException catch (e) {
       throw parseDispatchError(e);
     }
+  }
+
+  /// Dispatcher/admin override of the auto-derived priority.
+  Future<void> updateIncidentPriority(
+      String incidentId, String priority) async {
+    await supabaseClient
+        .from('incidents')
+        .update({'priority': priority})
+        .eq('id', incidentId);
   }
 }

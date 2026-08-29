@@ -2,25 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/constants/emergency_types.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/hospital.dart';
 import '../../services/incident_service.dart';
 import '../../state/dispatcher_provider.dart';
 import '../../widgets/error_state.dart';
 import 'location_picker.dart';
-
-const _emergencyTypes = [
-  'Road Traffic Accident',
-  'Cardiac Arrest',
-  'Breathing Difficulty',
-  'Trauma / Injury',
-  'Obstetric Emergency',
-  'Stroke',
-  'Unconscious Patient',
-  'Fire / Burns',
-  'Poisoning / Overdose',
-  'Other',
-];
 
 /// Dialog form for logging a new emergency incident.
 /// Call [showNewIncidentForm] to push it.
@@ -245,7 +233,7 @@ class _NewIncidentFormState extends ConsumerState<NewIncidentForm> {
                           labelText: 'Nature of Emergency *',
                           prefixIcon: Icon(Icons.warning_amber_outlined),
                         ),
-                        items: _emergencyTypes
+                        items: emergencyTypes
                             .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                             .toList(),
                         onChanged: (v) =>

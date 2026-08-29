@@ -15,6 +15,7 @@ import '../../state/hospital_provider.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/incident_history_list.dart';
+import '../../widgets/priority_badge.dart';
 import '../../widgets/profile_edit_sheet.dart';
 import '../../widgets/status_badge.dart';
 
@@ -671,6 +672,8 @@ class _IncomingPatientCardState
             // Status + time
             Row(
               children: [
+                PriorityBadge(priority: widget.incident.priority.dbValue),
+                const SizedBox(width: 6),
                 StatusBadge(status: widget.incident.status.dbValue),
                 const Spacer(),
                 Text(

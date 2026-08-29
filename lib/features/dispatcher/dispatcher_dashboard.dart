@@ -18,6 +18,7 @@ import '../../widgets/app_logo.dart';
 import '../../widgets/chat_sheet.dart';
 import '../../widgets/incident_history_list.dart';
 import '../../widgets/incident_routes_layer.dart';
+import '../../widgets/priority_badge.dart';
 import '../../widgets/profile_edit_sheet.dart';
 import '../../widgets/status_badge.dart';
 import 'manual_dispatch_dialog.dart';
@@ -583,6 +584,8 @@ class _IncidentCardState extends ConsumerState<_IncidentCard> {
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
+                _PriorityOverride(incident: widget.incident),
+                const SizedBox(width: 6),
                 StatusBadge(status: widget.incident.status.dbValue),
               ],
             ),
@@ -675,6 +678,9 @@ class _IncidentCardState extends ConsumerState<_IncidentCard> {
                             .clamp(0, 99);
                     return Row(
                       children: [
+                        PriorityBadge(
+                            priority: widget.incident.priority.dbValue),
+                        const SizedBox(width: 6),
                         StatusBadge(
                             status: widget.incident.status.dbValue),
                         const Spacer(),
@@ -1129,6 +1135,58 @@ class _LegendItem extends StatelessWidget {
             style: const TextStyle(
                 fontSize: 11, color: AppColors.textSecondary)),
       ],
+    );
+  }
+}
+
+// Tappable priority badge inside the incident detail bottom sheet — lets a
+// dispatcher upgrade/downgrade the auto-derived priority. Patients get no
+// equivalent control; only dispatcher/admin sessions render this widget.
+class _PriorityOverride extends StatefulWidget {
+  final Incident incident;
+  const _PriorityOverride({required this.incident});
+
+  @override
+  State<_PriorityOverride> createState() => _PriorityOverrideState();
+}
+
+class _PriorityOverrideState extends State<_PriorityOverride> {
+  bool _updating = false;
+
+  Future<void> _setPriority(IncidentPriority priority) async {
+    if (priority == widget.incident.priority) return;
+    setState(() => _updating = true);
+    try {
+      await IncidentService()
+          .updateIncidentPriority(widget.incident.id, priority.dbValue);
+      // Realtime subscription will refresh the card automatically.
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update priority: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _updating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<IncidentPriority>(
+      enabled: !_updating,
+      onSelected: _setPriority,
+      itemBuilder: (_) => IncidentPriority.values
+          .map((p) => PopupMenuItem(value: p, child: Text(p.label)))
+          .toList(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PriorityBadge(priority: widget.incident.priority.dbValue),
+          const SizedBox(width: 2),
+          const Icon(Icons.arrow_drop_down, size: 16, color: AppColors.textSecondary),
+        ],
+      ),
     );
   }
 }
