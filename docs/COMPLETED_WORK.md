@@ -831,3 +831,171 @@ explicitly out of scope, left as documented future work).*
 - Sanity-check the severity mapping in `set_incident_priority()` against
   clinical judgment before relying on it operationally — flagged above and
   in the migration file itself as a first pass, not a medical judgment.
+
+---
+
+## Admin Excel Export [x] Added
+
+*Feature, 31 Aug 2026 — the existing "Download CSV" button only copied text
+to the clipboard with a "paste into Excel or Sheets" hint; no real file
+download existed.*
+
+- [x] New `lib/services/admin_excel_export_service.dart` builds a real
+      3-sheet `.xlsx` workbook (Summary/KPIs, Patient Records, Response
+      Times) via the `excel` package, from the same data the analytics tab
+      and CSV dialog already fetch.
+- [x] New `lib/services/file_download_service.dart` (+`_web`/`_io`
+      conditional export, same pattern as `agora_service.dart`) triggers a
+      real browser download on Flutter web via `package:web`/`dart:js_interop`
+      (not the deprecated `dart:html`).
+- [x] New "Download Excel" button in the admin Analytics tab, next to the
+      existing CSV/DHIS2 buttons — CSV-to-clipboard left untouched (still
+      useful for quick paste-into-open-sheet on shared computers).
+
+### Needs Team Testing
+- `flutter analyze`: 0 issues.
+- Click "Download Excel" on a real admin session and open the downloaded
+  file in Excel/Sheets to confirm all 3 sheets are populated correctly.
+
+---
+
+## Notification Backbone + Push (FCM) [x] Added
+
+*Feature, 31 Aug 2026 — no push notification infrastructure existed; drivers
+and patients only learned about job offers/trip status while the app was
+open and foregrounded.*
+
+- [x] New migration `20260831000027_notifications_backbone.sql`: generic
+      `notifications` table (RLS: read/update own row only, no direct
+      INSERT — rows only come from `SECURITY DEFINER` RPCs) +
+      `device_tokens` table (per-user FCM tokens) + `create_notification()`
+      helper (not directly callable by `authenticated`). `accept_trip` and
+      `dispatch_incident` updated to notify the patient/driver respectively.
+- [x] New edge function `supabase/functions/send_push_notification/index.ts`
+      — fans a `notifications` INSERT out to FCM's HTTP v1 API (data-only
+      messages, so the client picks sound/channel by notification `type`),
+      self-heals by deleting tokens FCM reports unregistered. Needs a
+      Database Webhook configured in the Supabase Dashboard (not a
+      migration) on `notifications` INSERT → this function.
+- [x] Flutter: `app_notification.dart` model, `notification_service.dart`/
+      `notification_provider.dart` (Realtime feed), `push_notification_service.dart`
+      (FCM registration + foreground/background local notification display
+      via `flutter_local_notifications`), `GlobalNotificationListener`
+      (`lib/widgets/global_notification_listener.dart`) wired into
+      `app.dart`'s `MaterialApp.router` builder for an app-wide banner.
+      Device token registered on sign-in, unregistered on sign-out
+      (`auth_service.dart`).
+- [x] `lib/core/config/firebase_options.dart` is a **placeholder** —
+      `main.dart` skips `Firebase.initializeApp()` entirely while it still
+      has `REPLACE_WITH_FLUTTERFIRE_CONFIGURE` sentinel values, so the rest
+      of the app keeps working with push simply disabled until Firebase is
+      wired up for real.
+
+### Manual setup required before push notifications work at all
+1. Firebase Console: enable Cloud Messaging for project `erams-98eb2`.
+2. `dart pub global activate flutterfire_cli` → `firebase login` →
+   `flutterfire configure --project=erams-98eb2` from repo root — replaces
+   the placeholder `firebase_options.dart`, drops `android/app/google-services.json`.
+3. Firebase Console → Cloud Messaging → Web configuration: generate a VAPID
+   key, pass it at build time via `--dart-define=FCM_VAPID_KEY=...`.
+4. Firebase Console → Service Accounts: generate a private key JSON →
+   `supabase secrets set FCM_SERVICE_ACCOUNT_JSON="$(cat key.json)"` and
+   `supabase secrets set FCM_PROJECT_ID=erams-98eb2`.
+5. Configure the Database Webhook (Dashboard → Database → Webhooks) on
+   `notifications` INSERT → `send_push_notification`.
+6. Update `web/firebase-messaging-sw.js` with the same real config as
+   `firebase_options.dart` (currently a placeholder too).
+7. Supply a ringtone file in **two** places (see their README.md placeholders):
+   `assets/sounds/ringtone.mp3` (in-app foreground loop) and
+   `android/app/src/main/res/raw/ringtone.mp3` (Android notification-channel
+   sound) — no source audio is bundled in this repo.
+
+### Needs Team Testing
+- `flutter analyze`: 0 issues.
+- Everything above is untested against a live Firebase project (none
+  configured in this environment). Once the manual setup steps are done:
+  confirm a device token gets registered on sign-in (`device_tokens` table),
+  manually insert a `notifications` row and confirm a push arrives
+  foreground and backgrounded, and confirm sign-out removes the token row.
+
+---
+
+## Driver Rejection Flow [x] Added
+
+*Feature, 31 Aug 2026 — the Decline button was removed from the driver's
+job-offer card in a recent commit ("no credible reason to reject found");
+this brings it back with a structured reason, now that real rejection
+scenarios were identified (crew unqualified/under-equipped, outside
+operational area, patient needs higher level of care, unsafe access
+conditions).*
+
+- [x] New migration `20260831000029_decline_trip_reasons.sql`: adds
+      `trips.reject_reason_category` (4 categories + `timeout` for the
+      existing 30s auto-decline) and `reject_reason_notes`. `decline_trip`
+      RPC gains `p_reason_category`/`p_reason_notes` params (old 1-arg
+      signature explicitly dropped first — migration 021 already hit the
+      PostgREST "ambiguous overload" bug this would otherwise reintroduce).
+      Reassignment/no-ambulance-available logic is unchanged. Now notifies:
+      the next driver (`job_offer`) on reassignment, the patient
+      (`trip_rejected`, with reason + nearest-3-hospitals phone numbers from
+      `hospitals.contact_phone`) unconditionally, and every dispatcher
+      (`rejection_followup`) to prompt follow-up.
+- [x] `_JobOfferCard` (driver_screen.dart) has its Reject button back,
+      opening `_RejectReasonDialog` (category dropdown + optional free-text
+      elaboration) before calling decline. Auto-decline-on-timeout is
+      unchanged (defaults to `timeout` category server-side).
+- [x] New `lib/core/constants/rejection_reasons.dart` — single source for
+      the 4 category value↔label pairs.
+
+### Needs Team Testing
+- `flutter analyze`: 0 issues.
+- Depends on the notification backbone above being live to actually reach
+  the patient/dispatchers. Team should confirm, after applying migrations:
+  driver Reject → category+notes land on the cancelled `trips` row,
+  reassignment still works exactly as before, and (once push is configured)
+  the patient/dispatchers actually receive their respective notifications.
+
+---
+
+## In-App Calling With Ringing [x] Added
+
+*Feature, 31 Aug 2026 — calls only connected if both parties tapped "Call"
+at the same moment; there was no way to actually ring the other party.*
+
+- [x] New migration `20260831000028_calls.sql`: `calls` table (RLS:
+      participants only, no direct INSERT) + `start_call()` RPC — resolves
+      caller/callee server-side from the incident's trip/ambulance
+      assignment (driver → patient, patient → driver), so a caller can't
+      spoof who they're calling. `channel_name` reuses the incident id,
+      matching the existing Agora channel convention — no changes needed to
+      `generate_agora_token`. Sends an `incoming_call` notification through
+      the backbone above.
+- [x] New `lib/features/calls/incoming_call_screen.dart` — full-screen
+      ringing UI (30s countdown, ringtone loop via `audioplayers`,
+      vibration pattern via the `vibration` package), shown app-wide by
+      `GlobalNotificationListener` via the root navigator when
+      `incomingCallProvider` reports a new ringing call. Resolves a
+      caller-name label from the incident/ambulance data both sides can
+      already read (not a direct `profiles` lookup — RLS doesn't allow
+      driver/patient to read each other's profile rows).
+- [x] `call_screen.dart`: new `initiateCall()` replaces direct
+      `pushCallScreen()` at all 4 Call-button sites (driver + patient
+      screens) — calls `start_call()` first, then pushes the call screen.
+      `CallScreen` now watches the `calls` row's status via Realtime so a
+      decline/miss/end from the other party is reflected immediately
+      instead of waiting on Agora's own (no-such-concept-as-"declined")
+      join callbacks.
+
+### Known limitation (not fixed by this feature)
+Calling on Flutter web remains signaling-only — `agora_service_stub.dart` is
+a no-op on web, so a web user sees `IncomingCallScreen` and can Accept, but
+lands on the pre-existing "use the mobile app" fallback, not a live call.
+
+### Needs Team Testing
+- `flutter analyze`: 0 issues.
+- Untested against a live Supabase project. Team should confirm on two
+  real Android devices/sessions: driver taps Call → patient's
+  `IncomingCallScreen` rings (foreground) with Accept/Decline; Accept joins
+  the same Agora channel both sides; Decline/30s-no-answer marks the `calls`
+  row and the caller's screen reflects it; once push is configured, ringing
+  also works while the callee's app is backgrounded.

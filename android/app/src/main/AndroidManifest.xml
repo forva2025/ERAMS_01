@@ -17,6 +17,11 @@
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.microphone" android:required="false"/>
 
+    <!-- Push notifications (FCM) — required on Android 13+ to show any
+         notification, including the incoming-call ringer. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
     <application
         android:label="ERAMS"
         android:name="${applicationName}"

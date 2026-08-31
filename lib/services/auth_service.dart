@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../models/profile.dart';
+import 'push_notification_service.dart';
 import 'supabase_service.dart';
 
 class AuthService {
@@ -51,6 +52,9 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    // Must run before signOut() — deleting this device's token row needs a
+    // still-valid session for the RLS-scoped delete to succeed.
+    await PushNotificationService().unregisterCurrentToken();
     await supabaseClient.auth.signOut();
   }
 

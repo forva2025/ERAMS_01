@@ -176,7 +176,7 @@ class _TripTrackingScreenState extends ConsumerState<TripTrackingScreen> {
                     tooltip: 'Video Call',
                     backgroundColor: AppColors.statusEnRoute,
                     foregroundColor: Colors.white,
-                    onPressed: () => pushCallScreen(
+                    onPressed: () => initiateCall(
                       context,
                       incidentId: widget.incidentId,
                       isVideo: true,
@@ -197,7 +197,7 @@ class _TripTrackingScreenState extends ConsumerState<TripTrackingScreen> {
                     tooltip: 'Voice Call',
                     backgroundColor: AppColors.statusAvailable,
                     foregroundColor: Colors.white,
-                    onPressed: () => pushCallScreen(
+                    onPressed: () => initiateCall(
                       context,
                       incidentId: widget.incidentId,
                       isVideo: false,
