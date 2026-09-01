@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import '../../core/constants/rejection_reasons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/ambulance.dart';
 import '../../models/hospital.dart';
@@ -842,12 +843,15 @@ class _JobOfferCardState extends ConsumerState<_JobOfferCard> {
     }
   }
 
-  Future<void> _decline() async {
+  Future<void> _decline({String? reasonCategory, String? reasonNotes}) async {
     _timer?.cancel();
     if (!mounted) return;
     setState(() => _acting = true);
     try {
-      await ref.read(driverIncidentProvider.notifier).declineOffer();
+      await ref.read(driverIncidentProvider.notifier).declineOffer(
+            reasonCategory: reasonCategory,
+            reasonNotes: reasonNotes,
+          );
     } catch (e) {
       await ref.read(driverIncidentProvider.notifier).refreshAfterConflict();
       if (mounted) {
@@ -856,6 +860,16 @@ class _JobOfferCardState extends ConsumerState<_JobOfferCard> {
         );
         setState(() => _acting = false);
       }
+    }
+  }
+
+  Future<void> _showRejectDialog() async {
+    final result = await showDialog<(String, String?)>(
+      context: context,
+      builder: (_) => const _RejectReasonDialog(),
+    );
+    if (result != null) {
+      await _decline(reasonCategory: result.$1, reasonNotes: result.$2);
     }
   }
 
@@ -986,35 +1000,136 @@ class _JobOfferCardState extends ConsumerState<_JobOfferCard> {
                   ],
                 ),
               ),
-              // Accept button — no reject/decline option; if this driver
-              // doesn't act, the 30s countdown auto-declines and the offer
-              // moves to the next-nearest ambulance (see initState above).
+              // Reject + Accept — if this driver doesn't act at all, the 30s
+              // countdown auto-declines and the offer moves to the
+              // next-nearest ambulance (see initState above).
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _acting ? null : _accept,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.statusAvailable,
-                      minimumSize: const Size(0, 48),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: _acting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Accept',
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _acting ? null : _showRejectDialog,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                          minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Reject',
                             style: TextStyle(fontWeight: FontWeight.w700)),
-                  ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _acting ? null : _accept,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.statusAvailable,
+                          minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _acting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Accept',
+                                style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reject reason dialog — category dropdown + free-text elaboration
+// ---------------------------------------------------------------------------
+
+class _RejectReasonDialog extends StatefulWidget {
+  const _RejectReasonDialog();
+
+  @override
+  State<_RejectReasonDialog> createState() => _RejectReasonDialogState();
+}
+
+class _RejectReasonDialogState extends State<_RejectReasonDialog> {
+  String? _category;
+  final _notesCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Reject Job Offer'),
+      content: SizedBox(
+        width: 380,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Let dispatch and the patient know why you can\'t take this trip.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              initialValue: _category,
+              decoration: const InputDecoration(
+                labelText: 'Reason',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: [
+                for (final entry in rejectionReasonLabels.entries)
+                  DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+              ],
+              onChanged: (v) => setState(() => _category = v),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _notesCtrl,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Details (optional)',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _category == null
+              ? null
+              : () => Navigator.of(context).pop((
+                    _category!,
+                    _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+                  )),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+          child: const Text('Reject Trip'),
         ),
       ],
     );
@@ -1329,7 +1444,7 @@ class _ActiveIncidentCardState extends ConsumerState<_ActiveIncidentCard> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => pushCallScreen(
+                        onPressed: () => initiateCall(
                           context,
                           incidentId: incident.id,
                           isVideo: false,
@@ -1351,7 +1466,7 @@ class _ActiveIncidentCardState extends ConsumerState<_ActiveIncidentCard> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => pushCallScreen(
+                        onPressed: () => initiateCall(
                           context,
                           incidentId: incident.id,
                           isVideo: true,

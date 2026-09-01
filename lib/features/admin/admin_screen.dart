@@ -7,7 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../services/admin_excel_export_service.dart';
 import '../../services/admin_service.dart';
+import '../../services/file_download_service.dart';
 import '../../models/ambulance.dart';
 import '../../models/hospital.dart';
 import '../../models/incident.dart';
@@ -2740,6 +2742,12 @@ class _AnalyticsTab extends ConsumerWidget {
                   label: const Text('Download CSV'),
                 ),
                 const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _downloadExcel(context, a),
+                  icon: const Icon(Icons.grid_on_outlined, size: 18),
+                  label: const Text('Download Excel'),
+                ),
+                const SizedBox(width: 8),
                 FilledButton.icon(
                   onPressed: () => _showDhis2Dialog(context),
                   icon: const Icon(Icons.upload_outlined, size: 18),
@@ -2864,6 +2872,25 @@ void _showDhis2Dialog(BuildContext context) {
     context: context,
     builder: (_) => const _Dhis2ExportDialog(),
   );
+}
+
+Future<void> _downloadExcel(BuildContext context, AdminAnalytics a) async {
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.showSnackBar(const SnackBar(content: Text('Preparing report…')));
+  try {
+    // Fetch fresh records (not the cached provider) so the export always
+    // reflects the latest data, same convention as the CSV dialog.
+    final records = await AdminService().fetchAllPatientRecords();
+    final bytes = AdminExcelExportService()
+        .buildWorkbookBytes(analytics: a, records: records);
+    final date = DateTime.now().toIso8601String().split('T').first;
+    downloadBytes(bytes: bytes, filename: 'erams_report_$date.xlsx');
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Excel report downloaded')),
+    );
+  } catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text('Export failed: $e')));
+  }
 }
 
 class _KpiCard extends StatelessWidget {

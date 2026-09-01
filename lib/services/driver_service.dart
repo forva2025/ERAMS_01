@@ -37,9 +37,16 @@ class DriverService {
     await SmsService().notifyHospitalIncomingPatient(incidentId);
   }
 
-  Future<void> declineTrip(String incidentId) async {
-    final result = await supabaseClient
-        .rpc('decline_trip', params: {'p_incident_id': incidentId});
+  Future<void> declineTrip(
+    String incidentId, {
+    String? reasonCategory,
+    String? reasonNotes,
+  }) async {
+    final result = await supabaseClient.rpc('decline_trip', params: {
+      'p_incident_id': incidentId,
+      'p_reason_category': reasonCategory,
+      'p_reason_notes': reasonNotes,
+    });
     final nextAmbulanceId =
         result is Map ? result['next_ambulance_id'] as String? : null;
     if (nextAmbulanceId != null) {

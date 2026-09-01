@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme/app_colors.dart';
 import '../services/agora_service.dart';
+import '../services/call_service.dart';
+import '../services/supabase_service.dart';
 
 // ---------------------------------------------------------------------------
 // Entry point — push this route onto the navigator stack
@@ -13,17 +16,54 @@ import '../services/agora_service.dart';
 ///
 /// [incidentId] is used as the Agora channel name.
 /// [isVideo]   true = video call, false = voice-only call.
+/// [callId]/[isCaller] identify this as a signaled call (see [initiateCall]
+/// / IncomingCallScreen) — left null/false for any older call site that
+/// hasn't been migrated to signaling yet.
 Future<void> pushCallScreen(
   BuildContext context, {
   required String incidentId,
   bool isVideo = false,
+  String? callId,
+  bool isCaller = false,
 }) {
   return Navigator.of(context).push<void>(
     MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => CallScreen(incidentId: incidentId, isVideo: isVideo),
+      builder: (_) => CallScreen(
+        incidentId: incidentId,
+        isVideo: isVideo,
+        callId: callId,
+        isCaller: isCaller,
+      ),
     ),
   );
+}
+
+/// Starts a signaled call (rings the other party via the `calls` table —
+/// see IncomingCallScreen) and pushes the call screen. Replaces direct
+/// `pushCallScreen()` calls at every Call-button site.
+Future<void> initiateCall(
+  BuildContext context, {
+  required String incidentId,
+  required bool isVideo,
+}) async {
+  try {
+    final call = await CallService().startCall(incidentId: incidentId, isVideo: isVideo);
+    if (!context.mounted) return;
+    await pushCallScreen(
+      context,
+      incidentId: incidentId,
+      isVideo: isVideo,
+      callId: call.id,
+      isCaller: true,
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    final msg = e.toString().contains('callee_not_found')
+        ? 'The other party isn\'t reachable right now.'
+        : 'Could not start call: $e';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -35,11 +75,15 @@ enum _CallState { requestingPermissions, connecting, waiting, inCall, error }
 class CallScreen extends StatefulWidget {
   final String incidentId;
   final bool isVideo;
+  final String? callId;
+  final bool isCaller;
 
   const CallScreen({
     super.key,
     required this.incidentId,
     required this.isVideo,
+    this.callId,
+    this.isCaller = false,
   });
 
   @override
@@ -51,15 +95,52 @@ class _CallScreenState extends State<CallScreen> {
   _CallState _state = _CallState.requestingPermissions;
   String? _errorMessage;
   bool _remoteJoined = false;
+  RealtimeChannel? _callChannel;
 
   @override
   void initState() {
     super.initState();
+    if (widget.callId != null) _subscribeCallStatus(widget.callId!);
     if (kIsWeb) {
       _requestWebPermissions();
     } else {
       _requestNativePermissions();
     }
+  }
+
+  /// Watches the signaled call row so this screen notices if the other
+  /// party declines/misses/ends the call before (or instead of) Agora ever
+  /// reporting a remote join — Agora's own callbacks have no concept of
+  /// "the other person said no", only "someone joined the media channel".
+  void _subscribeCallStatus(String callId) {
+    _callChannel = supabaseClient
+        .channel('call:$callId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'calls',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: callId,
+          ),
+          callback: (payload) {
+            final status = payload.newRecord['status'] as String?;
+            if (!mounted || _state == _CallState.inCall) return;
+            if (status == 'declined' || status == 'missed' || status == 'ended') {
+              setState(() {
+                _state = _CallState.error;
+                _errorMessage = status == 'declined'
+                    ? 'Call declined.'
+                    : status == 'missed'
+                        ? 'No answer.'
+                        : 'Call ended.';
+              });
+              _service.leave();
+            }
+          },
+        )
+        .subscribe();
   }
 
   // ── Web: request browser mic/camera permission then show redirect message ─
@@ -148,11 +229,19 @@ class _CallScreenState extends State<CallScreen> {
 
   Future<void> _endCall() async {
     await _service.leave();
+    if (widget.callId != null) {
+      try {
+        await CallService().updateStatus(widget.callId!, 'ended');
+      } catch (_) {
+        // Best-effort — the other party's own leave detection is the fallback.
+      }
+    }
     if (mounted) Navigator.of(context).pop();
   }
 
   @override
   void dispose() {
+    _callChannel?.unsubscribe();
     _service.dispose();
     super.dispose();
   }
@@ -288,19 +377,15 @@ class _CallScreenState extends State<CallScreen> {
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ),
-        const SizedBox(height: 24),
-        TextButton.icon(
-          onPressed: () async {
-            if (_errorMessage?.contains('permission') == true) {
-              await openAppSettings();
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
-          icon: const Icon(Icons.settings_outlined, color: Colors.white60),
-          label: const Text('Open Settings',
-              style: TextStyle(color: Colors.white60)),
-        ),
+        if (_errorMessage?.contains('permission') == true) ...[
+          const SizedBox(height: 24),
+          TextButton.icon(
+            onPressed: openAppSettings,
+            icon: const Icon(Icons.settings_outlined, color: Colors.white60),
+            label: const Text('Open Settings',
+                style: TextStyle(color: Colors.white60)),
+          ),
+        ],
         const Spacer(),
         _buildEndButton(label: 'Close'),
         const SizedBox(height: 32),

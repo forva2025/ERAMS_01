@@ -159,10 +159,14 @@ class DriverIncidentNotifier extends AsyncNotifier<Incident?> {
   /// Declines the current job offer. After decline, the incident is
   /// re-assigned to a different ambulance, so the Realtime filter on this
   /// ambulance_id will no longer fire — we must refresh manually.
-  Future<void> declineOffer() async {
+  Future<void> declineOffer({String? reasonCategory, String? reasonNotes}) async {
     final incident = state.valueOrNull;
     if (incident == null) return;
-    await DriverService().declineTrip(incident.id);
+    await DriverService().declineTrip(
+      incident.id,
+      reasonCategory: reasonCategory,
+      reasonNotes: reasonNotes,
+    );
     await _refresh();
   }
 

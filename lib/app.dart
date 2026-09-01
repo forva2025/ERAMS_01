@@ -15,7 +15,9 @@ import 'features/patient/new_request_form.dart';
 import 'features/patient/patient_home_screen.dart';
 import 'features/patient/trip_rating_screen.dart';
 import 'features/patient/trip_tracking_screen.dart';
+import 'services/push_notification_service.dart';
 import 'services/supabase_service.dart';
+import 'widgets/global_notification_listener.dart';
 
 class EramsApp extends StatelessWidget {
   const EramsApp({super.key});
@@ -27,6 +29,9 @@ class EramsApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       routerConfig: _router,
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
+      builder: (context, child) =>
+          GlobalNotificationListener(child: child),
     );
   }
 }
@@ -38,6 +43,7 @@ class EramsApp extends StatelessWidget {
 final _authChangeNotifier = _AuthChangeNotifier();
 
 final _router = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/login',
   refreshListenable: _authChangeNotifier,
   redirect: (context, state) {
@@ -139,6 +145,9 @@ class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier() {
     supabaseClient.auth.onAuthStateChange.listen((data) {
       lastEvent = data.event;
+      if (data.event == AuthChangeEvent.signedIn) {
+        PushNotificationService().registerCurrentToken();
+      }
       notifyListeners();
     });
   }
