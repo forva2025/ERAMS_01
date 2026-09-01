@@ -956,6 +956,7 @@ class _JobOfferCardState extends ConsumerState<_JobOfferCard> {
                             color: AppColors.textPrimary),
                       ),
                     ),
+                    PriorityBadge(priority: incident.priority.dbValue),
                   ],
                 ),
               ),
