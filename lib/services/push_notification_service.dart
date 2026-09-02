@@ -15,7 +15,7 @@ const _vapidKey = String.fromEnvironment('FCM_VAPID_KEY');
 const _defaultChannel = AndroidNotificationChannel(
   'erams_default',
   'ERAMS Notifications',
-  'Trip and dispatch updates',
+  description: 'Trip and dispatch updates',
   importance: Importance.high,
 );
 
@@ -28,7 +28,7 @@ const _defaultChannel = AndroidNotificationChannel(
 const _incomingCallChannel = AndroidNotificationChannel(
   'erams_incoming_call',
   'Incoming Calls',
-  'Rings when a driver or patient is calling you',
+  description: 'Rings when a driver or patient is calling you',
   importance: Importance.max,
   sound: RawResourceAndroidNotificationSound('ringtone'),
   playSound: true,
@@ -71,7 +71,7 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
       android: AndroidNotificationDetails(
         channel.id,
         channel.name,
-        channel.description,
+        channelDescription: channel.description,
         importance: channel.importance,
         priority: Priority.high,
         sound: channel.sound,

@@ -55,7 +55,7 @@ dependencies:
   # Push notifications (FCM) + local display of foreground/background messages
   firebase_core: ^4.14.0
   firebase_messaging: ^16.6.0
-  flutter_local_notifications: ^8.2.0
+  flutter_local_notifications: ^12.0.1
 
   # Incoming-call ringing (foreground ringtone loop + vibration pattern)
   audioplayers: ^6.8.1
@@ -67,6 +67,15 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   build_runner: ^2.0.0
   riverpod_generator: ^2.0.0
+
+# See third_party/README.md — vendored, patched copy working around a
+# still-open upstream build-blocking bug. Remove this override once a fixed
+# version ships on pub.dev.
+dependency_overrides:
+  flutter_local_notifications:
+    path: third_party/flutter_local_notifications
+  vibration:
+    path: third_party/vibration
 
 flutter:
   uses-material-design: true

@@ -905,10 +905,13 @@ open and foregrounded.*
    `notifications` INSERT → `send_push_notification`.
 6. Update `web/firebase-messaging-sw.js` with the same real config as
    `firebase_options.dart` (currently a placeholder too).
-7. Supply a ringtone file in **two** places (see their README.md placeholders):
-   `assets/sounds/ringtone.mp3` (in-app foreground loop) and
+7. Supply a ringtone file in **two** places: `assets/sounds/ringtone.mp3`
+   (in-app foreground loop, see the README.md placeholder there) and
    `android/app/src/main/res/raw/ringtone.mp3` (Android notification-channel
-   sound) — no source audio is bundled in this repo.
+   sound; that directory has no placeholder file — Android resource naming
+   rules don't allow a README.md there, it broke the release build — so
+   just create the directory and drop `ringtone.mp3` straight in) — no
+   source audio is bundled in this repo.
 
 ### Needs Team Testing
 - `flutter analyze`: 0 issues.

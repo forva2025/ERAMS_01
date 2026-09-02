@@ -26,6 +26,22 @@ subprojects {
         if (plugins.hasPlugin("com.android.library")) {
             extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
                 compileSdk = 36
+                // flutter_local_notifications 8.2.0 (and other old, unmaintained
+                // plugins) predate AGP 8's required `namespace` field and only
+                // declare a `package` attribute in their AndroidManifest.xml,
+                // which AGP 8 no longer falls back to — causing "Namespace not
+                // specified" configuration failures. Backfill it from the
+                // manifest's package attribute for any plugin that hasn't set
+                // one, so upgrading AGP doesn't require patching every such
+                // plugin individually.
+                if (namespace == null) {
+                    val manifest = file("src/main/AndroidManifest.xml")
+                    if (manifest.exists()) {
+                        val pkg = Regex("package=\"([^\"]+)\"")
+                            .find(manifest.readText())?.groupValues?.get(1)
+                        if (pkg != null) namespace = pkg
+                    }
+                }
             }
         }
     }
