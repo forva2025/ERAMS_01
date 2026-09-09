@@ -1,0 +1,58 @@
+name: Deploy Supabase Migrations and Edge Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+
+jobs:
+  deploy-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          # Pinned instead of "latest" — resolving "latest" makes an
+          # unauthenticated GitHub API call that intermittently fails with
+          # "rate limit exceeded" on shared runner IPs (seen 7 Jul and 11 Jul).
+          # Bump this deliberately when needed instead.
+          version: 2.109.1
+
+      - name: Link Supabase project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Check for migrations
+        id: check-migrations
+        run: |
+          if find supabase/migrations -name "*.sql" | grep -q .; then
+            echo "has_migrations=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_migrations=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push migrations
+        if: steps.check-migrations.outputs.has_migrations == 'true'
+        run: supabase db push --include-all
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Check for Edge Functions
+        id: check-functions
+        run: |
+          if find supabase/functions -name "index.ts" | grep -q .; then
+            echo "has_functions=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_functions=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy Edge Functions
+        if: steps.check-functions.outputs.has_functions == 'true'
+        run: supabase functions deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

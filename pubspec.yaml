@@ -1,0 +1,87 @@
+name: erams
+description: Emergency Response and Ambulance Management System
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Web URL strategy (path-based routing instead of hash, so Supabase's
+  # #access_token=... auth links don't collide with go_router)
+  flutter_web_plugins:
+    sdk: flutter
+
+  # Supabase
+  supabase_flutter: ^2.0.0
+
+  # State management
+  flutter_riverpod: ^2.0.0
+  riverpod_annotation: ^2.0.0
+
+  # Routing
+  go_router: ^13.0.0
+
+  # Maps (OpenStreetMap, zero-cost)
+  flutter_map: ^6.0.0
+  latlong2: ^0.9.0
+
+  # Location (driver GPS)
+  geolocator: ^11.0.0
+
+  # External app launch (Google Maps navigation deep link)
+  url_launcher: ^6.0.0
+
+  # Turn-by-turn road routing (shortest path between patient and ambulance)
+  http: ^1.2.0
+
+  # Offline storage (queue for location updates when offline)
+  hive_flutter: ^1.1.0
+
+  # Charts (admin analytics)
+  fl_chart: ^0.68.0
+
+  # Voice & video calls (Phase 18)
+  agora_rtc_engine: ^6.6.3
+  permission_handler: ^12.0.3
+
+  # Admin analytics Excel export (real .xlsx download, web)
+  excel: ^4.0.6
+  web: ^1.1.1
+
+  # Push notifications (FCM) + local display of foreground/background messages
+  firebase_core: ^4.14.0
+  firebase_messaging: ^16.6.0
+  flutter_local_notifications: ^12.0.1
+
+  # Incoming-call ringing (foreground ringtone loop + vibration pattern)
+  audioplayers: ^6.8.1
+  vibration: ^1.7.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.0.0
+  riverpod_generator: ^2.0.0
+
+# See third_party/README.md — vendored, patched copy working around a
+# still-open upstream build-blocking bug. Remove this override once a fixed
+# version ships on pub.dev.
+dependency_overrides:
+  flutter_local_notifications:
+    path: third_party/flutter_local_notifications
+  vibration:
+    path: third_party/vibration
+
+flutter:
+  uses-material-design: true
+
+  # assets/sounds/ringtone.mp3 must be supplied manually (not bundled in this
+  # repo) — see IncomingCallScreen's _startRinging(), which fails silently
+  # (still visible/vibrating) if the file is missing.
+  assets:
+    - assets/sounds/

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ERAMS — End-to-End Testing Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --red: #C62828;
+    --red-light: #FFDAD6;
+    --blue: #1565C0;
+    --blue-light: #DCEBFC;
+    --purple: #6A1B9A;
+    --purple-light: #EEDCF7;
+    --teal: #00695C;
+    --teal-light: #D7EDE9;
+    --bg: #F5F5F5;
+    --surface: #FFFFFF;
+    --text: #212121;
+    --text-secondary: #757575;
+    --divider: #E0E0E0;
+    --green: #2E7D32;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  header.hero {
+    background: linear-gradient(135deg, var(--red), #8E1313);
+    color: white;
+    padding: 40px 24px 32px;
+    text-align: center;
+  }
+
+  header.hero h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+    letter-spacing: 1px;
+  }
+
+  header.hero p {
+    margin: 4px 0;
+    opacity: 0.92;
+    font-size: 14px;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 24px 28px;
+    margin-bottom: 22px;
+  }
+
+  h2.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    color: var(--red);
+    margin: 0 0 16px;
+    border-bottom: 2px solid var(--red-light);
+    padding-bottom: 10px;
+  }
+
+  h2.section-title .num {
+    background: var(--red);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 12px 0;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--divider);
+  }
+
+  th {
+    background: #FAFAFA;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  code, .mono {
+    font-family: "SF Mono", Consolas, Menlo, monospace;
+    background: #F0F0F0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  .pill {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .pill-dispatcher { background: var(--red-light); color: var(--red); }
+  .pill-driver      { background: var(--blue-light); color: var(--blue); }
+  .pill-hospital    { background: var(--purple-light); color: var(--purple); }
+  .pill-admin       { background: var(--teal-light); color: var(--teal); }
+
+  .callout {
+    border-left: 4px solid var(--blue);
+    background: var(--blue-light);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin: 14px 0;
+  }
+
+  .callout.warn {
+    border-left-color: #F57F17;
+    background: #FFF6E0;
+  }
+
+  .step {
+    border-left: 5px solid var(--divider);
+    border-radius: 10px;
+    background: #FAFAFA;
+    padding: 14px 18px 16px;
+    margin: 14px 0;
+  }
+
+  .step.dispatcher { border-left-color: var(--red); }
+  .step.driver      { border-left-color: var(--blue); }
+  .step.hospital     { border-left-color: var(--purple); }
+  .step.admin        { border-left-color: var(--teal); }
+
+  .step-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .step-num {
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .step-title {
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .step ul {
+    margin: 8px 0 4px;
+    padding-left: 22px;
+  }
+
+  .step li {
+    margin: 4px 0;
+    font-size: 14px;
+  }
+
+  .expect {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .expect b { color: var(--green); }
+
+  label.check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14px;
+    margin: 6px 0;
+    cursor: pointer;
+  }
+
+  label.check input { margin-top: 3px; }
+
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 20px;
+  }
+
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .toc a {
+    background: rgba(255,255,255,0.18);
+    color: white;
+    text-decoration: none;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 16px;
+  }
+
+  .toc a:hover { background: rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>ERAMS — End-to-End Testing Guide</h1>
+  <p>Emergency Response and Ambulance Management System · Kyambogo University Final Year Project</p>
+  <p>Use this guide to walk the full incident lifecycle across all four roles and confirm everything works together.</p>
+  <p style="margin-top: 14px; font-size: 16px;">
+    <b>Live app:</b> <a href="https://erams-98eb2.web.app/" style="color: white; text-decoration: underline;">erams-98eb2.web.app</a>
+  </p>
+  <div class="toc">
+    <a href="#prereqs">Before You Start</a>
+    <a href="#accounts">Test Accounts</a>
+    <a href="#flow">Core Test Flow</a>
+    <a href="#admin">Admin Checklist</a>
+    <a href="#extras">Other Checks</a>
+    <a href="#seed">Seeded Data</a>
+    <a href="#caveats">Known Caveats</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <section class="card" id="prereqs">
+    <h2 class="section-title"><span class="num">1</span> Before You Start</h2>
+    <p>You'll be testing the <b>live deployed app</b> — no setup, no Flutter, no local environment needed. Just open it in your browser:</p>
+    <div class="callout">
+      <b>App URL:</b> <a href="https://erams-98eb2.web.app/">https://erams-98eb2.web.app/</a>
+    </div>
+    <p>Because the dispatcher, driver, hospital, and admin actions need to happen <b>at the same time</b> to see the real-time updates, you need <b>four separate logged-in sessions</b> open simultaneously. The app stores your login session in the browser, so the same browser can only hold <b>one</b> session at a time.</p>
+    <div class="callout">
+      Open <b>four separate browser windows</b>, all pointed at the link above — e.g. one normal window plus three Incognito/Private windows (Ctrl+Shift+N in Chrome), or four different browsers (Chrome, Edge, Firefox, Brave). Sign in to a different test account in each one and arrange them side by side.
+    </div>
+  </section>
+
+  <section class="card" id="accounts">
+    <h2 class="section-title"><span class="num">2</span> Test Accounts</h2>
+    <p>All four accounts share the password <code>Erams2026!</code>.</p>
+    <table>
+      <tr><th>Role</th><th>Email</th><th>Password</th><th>Notes</th></tr>
+      <tr>
+        <td><span class="pill pill-dispatcher">Dispatcher</span></td>
+        <td><code>katusiime66+dispatcher@gmail.com</code></td>
+        <td><code>Erams2026!</code></td>
+        <td>Logs incidents, dispatches ambulances</td>
+      </tr>
+      <tr>
+        <td><span class="pill pill-driver">Driver</span></td>
+        <td><code>katusiime66+driver@gmail.com</code></td>
+        <td><code>Erams2026!</code></td>
+        <td>Linked to ambulance <code>UBE 001A</code></td>
+      </tr>
+      <tr>
+        <td><span class="pill pill-hospital">Hospital</span></td>
+        <td><code>katusiime66+hospital@gmail.com</code></td>
+        <td><code>Erams2026!</code></td>
+        <td>Linked to Mulago National Referral Hospital</td>
+      </tr>
+      <tr>
+        <td><span class="pill pill-admin">Admin</span></td>
+        <td><code>katusiime66+admin@gmail.com</code></td>
+        <td><code>Erams2026!</code></td>
+        <td>Full access — fleet, users, analytics</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card" id="flow">
+    <h2 class="section-title"><span class="num">3</span> Core Test Flow — Full Incident Lifecycle</h2>
+    <div class="callout">
+      <b>Tip:</b> only <code>UBE 001A</code> has a driver account linked to it. Drop your Step 1 incident pin near <b>Nakasero</b> (central Kampala) so auto-dispatch picks <code>UBE 001A</code> automatically — or use the <b>Manual</b> assignment option in Step 2 and pick <code>UBE 001A</code> directly. See <a href="#seed">Seeded Reference Data</a> below for the full ambulance/hospital list.
+    </div>
+    <p>Follow these steps in order, switching between your four browser windows as indicated. Each step says which role performs it and what you should see happen.</p>
+
+    <div class="step dispatcher">
+      <div class="step-head">
+        <span class="step-num">Step 1</span>
+        <span class="pill pill-dispatcher">Dispatcher</span>
+        <span class="step-title">Log a new incident</span>
+      </div>
+      <ul>
+        <li>Sign in as the <b>Dispatcher</b> account.</li>
+        <li>Click <b>"New Incident"</b>.</li>
+        <li>Drop a pin on the map near <b>Nakasero</b> (central Kampala).</li>
+        <li>Fill in nature of emergency, reporter name/phone, patient condition notes.</li>
+        <li>Set the hospital to <b>Mulago National Referral Hospital</b>.</li>
+        <li>Submit the form.</li>
+      </ul>
+      <div class="expect">Expected: the new incident appears instantly as a <b>card and a red map marker</b>, with status <b>LOGGED</b> — no page refresh needed.</div>
+      <label class="check"><input type="checkbox"> Incident appeared on the dashboard and map</label>
+    </div>
+
+    <div class="step dispatcher">
+      <div class="step-head">
+        <span class="step-num">Step 2</span>
+        <span class="pill pill-dispatcher">Dispatcher</span>
+        <span class="step-title">Dispatch the nearest ambulance</span>
+      </div>
+      <ul>
+        <li>On the new incident card, click <b>"Dispatch Nearest"</b>.</li>
+        <li>If a different ambulance is chosen automatically, click <b>"Manual"</b> instead and assign <code>UBE 001A</code> directly.</li>
+      </ul>
+      <div class="expect">Expected: the card updates to <b>DISPATCHED</b> with <code>UBE 001A</code> shown as the assigned ambulance, with no page refresh.</div>
+      <label class="check"><input type="checkbox"> Ambulance UBE 001A assigned and status shows DISPATCHED</label>
+    </div>
+
+    <div class="step driver">
+      <div class="step-head">
+        <span class="step-num">Step 3</span>
+        <span class="pill pill-driver">Driver</span>
+        <span class="step-title">Receive the alert and head out</span>
+      </div>
+      <ul>
+        <li>Switch to the <b>Driver</b> window (already signed in).</li>
+        <li>Confirm the active incident card appears automatically — this is the real-time alert, no refresh needed.</li>
+        <li>Try the <b>"Navigate to Scene"</b> button — it should open Google Maps in a new tab with the incident location pre-loaded as the destination and driving mode selected.</li>
+        <li>Click <b>"I'm En Route"</b>.</li>
+      </ul>
+      <div class="expect">Expected: the Dispatcher's card updates to <b>EN ROUTE</b> and the ambulance marker colour changes on the map, live.</div>
+      <label class="check"><input type="checkbox"> Incident alert appeared without refresh</label>
+      <label class="check"><input type="checkbox"> Navigate to Scene opened Google Maps correctly</label>
+      <label class="check"><input type="checkbox"> Dispatcher view updated to EN ROUTE in real time</label>
+    </div>
+
+    <div class="step hospital">
+      <div class="step-head">
+        <span class="step-num">Step 4</span>
+        <span class="pill pill-hospital">Hospital</span>
+        <span class="step-title">See the incoming patient and acknowledge</span>
+      </div>
+      <ul>
+        <li>Switch to the <b>Hospital</b> window (already signed in as the Mulago account).</li>
+        <li>Confirm the incident appears under <b>"Incoming"</b> with the patient condition notes and a live ETA.</li>
+        <li>Click <b>"Acknowledge — Ready to Receive"</b>.</li>
+        <li><b>Refresh the page</b> and confirm the button still shows "Acknowledged" (this was a bug we fixed — it must survive a refresh).</li>
+      </ul>
+      <div class="expect">Expected: the ETA updates live as the driver's GPS position changes; acknowledgement persists after refresh.</div>
+      <label class="check"><input type="checkbox"> Incoming patient card shows a live ETA</label>
+      <label class="check"><input type="checkbox"> Acknowledge button works and survives a page refresh</label>
+    </div>
+
+    <div class="step driver">
+      <div class="step-head">
+        <span class="step-num">Step 5</span>
+        <span class="pill pill-driver">Driver</span>
+        <span class="step-title">Arrive and complete the incident</span>
+      </div>
+      <ul>
+        <li>Back in the <b>Driver</b> window, click <b>"I've Arrived"</b>.</li>
+        <li>Then click <b>"Incident Complete"</b>.</li>
+      </ul>
+      <div class="expect">Expected: the incident disappears from the Dispatcher's active list, and <code>UBE 001A</code> returns to <b>Available</b> status.</div>
+      <label class="check"><input type="checkbox"> Incident marked ARRIVED then COMPLETED</label>
+      <label class="check"><input type="checkbox"> Ambulance returned to Available status on the Dispatcher map</label>
+    </div>
+
+    <div class="step dispatcher">
+      <div class="step-head">
+        <span class="step-num">Step 6</span>
+        <span class="pill pill-dispatcher">Dispatcher</span> + <span class="pill pill-hospital">Hospital</span> + <span class="pill pill-driver">Driver</span>
+        <span class="step-title">Check history tabs</span>
+      </div>
+      <ul>
+        <li>In each of the three windows, open the <b>"History"</b> tab.</li>
+      </ul>
+      <div class="expect">Expected: the completed incident appears in the Dispatcher's, Hospital's, and Driver's history list.</div>
+      <label class="check"><input type="checkbox"> Completed incident appears in all three relevant history tabs</label>
+    </div>
+
+  </section>
+
+  <section class="card" id="admin">
+    <h2 class="section-title"><span class="num">4</span> Admin Module Checklist</h2>
+    <p>Switch to the <span class="pill pill-admin">Admin</span> window for these checks.</p>
+
+    <div class="step admin">
+      <div class="step-head"><span class="step-title">Fleet tab</span></div>
+      <ul>
+        <li>Confirm all 5 seeded ambulances are listed with status badges.</li>
+        <li>Click <b>"Add Ambulance"</b> — create a test ambulance, assign a driver/hospital, save.</li>
+        <li>Edit an existing ambulance's assigned driver and confirm it persists after refresh.</li>
+      </ul>
+      <label class="check"><input type="checkbox"> Add Ambulance works</label>
+      <label class="check"><input type="checkbox"> Editing an ambulance persists</label>
+    </div>
+
+    <div class="step admin">
+      <div class="step-head"><span class="step-title">Users tab</span></div>
+      <ul>
+        <li>Confirm all 4 demo accounts are listed with readable names (not "?" avatars).</li>
+        <li>Click <b>"Add User"</b>, fill in a test account, submit — confirm a one-time temporary password is shown.</li>
+        <li>Sign in as that new account with the temp password in a fresh window — confirm it forces you to <b>set your own password</b> before reaching the dashboard.</li>
+        <li>On an existing user, open the <b>⋮</b> menu → <b>"Edit Details"</b> — change name/phone, save, refresh to confirm it persisted.</li>
+        <li>On an existing user, open <b>⋮</b> → <b>"Reset Password"</b>, confirm, then sign in as that user with the new temp password — confirm the forced password-change screen appears again.</li>
+        <li>Tap a role badge and change a user's role — confirm it updates immediately.</li>
+      </ul>
+      <label class="check"><input type="checkbox"> All users show real names (not "?")</label>
+      <label class="check"><input type="checkbox"> Add User creates an account and shows a temp password</label>
+      <label class="check"><input type="checkbox"> New account is forced to set its own password on first login</label>
+      <label class="check"><input type="checkbox"> Edit Details persists name/phone changes</label>
+      <label class="check"><input type="checkbox"> Reset Password works and forces a password change on next login</label>
+      <label class="check"><input type="checkbox"> Changing a role updates immediately</label>
+    </div>
+
+    <div class="step admin">
+      <div class="step-head"><span class="step-title">Analytics tab</span></div>
+      <ul>
+        <li>Confirm the total incident count matches what you'd expect from testing so far.</li>
+        <li>Confirm the Avg Response Time KPI reflects the incident you completed in Step 5.</li>
+        <li>Confirm the "incidents by hospital" and "incidents by status" charts render without errors.</li>
+      </ul>
+      <label class="check"><input type="checkbox"> Analytics tab loads with no Supabase errors</label>
+      <label class="check"><input type="checkbox"> Avg Response Time reflects your test incident</label>
+    </div>
+  </section>
+
+  <section class="card" id="extras">
+    <h2 class="section-title"><span class="num">5</span> Other Checks</h2>
+    <ul>
+      <li><b>Profile sheet</b> — on every role, click the profile icon in the top app bar, edit your name/phone, save, confirm it persists.</li>
+      <li><b>Sign out</b> — confirm the logout icon returns you to the Login screen on every role.</li>
+      <li><b>Responsive layout</b> — resize the browser window narrower (or open on a phone) and confirm the Dispatcher/Admin views remain usable, and the Driver/Hospital views look right on a mobile width.</li>
+      <li><b>Android driver app</b> — if an APK build is available, install it on a physical device and repeat Steps 3 and 5 from a real phone to confirm live GPS tracking works outside the browser.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="seed">
+    <h2 class="section-title"><span class="num">6</span> Seeded Reference Data</h2>
+    <p>Background info, not a test step — useful if you want to understand why a particular ambulance got picked, or to plan your own pin location.</p>
+    <table>
+      <tr><th>Hospital</th><th>Area</th></tr>
+      <tr><td>Healthstone Hospital</td><td>Banda, Nakawa Division</td></tr>
+      <tr><td>Mulago National Referral Hospital</td><td>Upper Mulago Hill Road</td></tr>
+    </table>
+    <table>
+      <tr><th>Ambulance</th><th>Area</th><th>Home Hospital</th><th>Driver</th></tr>
+      <tr><td><code>UBE 001A</code></td><td>Nakasero (central)</td><td>Mulago</td><td>Test driver account</td></tr>
+      <tr><td><code>UBE 002A</code></td><td>Ntinda (east)</td><td>Healthstone</td><td>— unassigned</td></tr>
+      <tr><td><code>UBE 003A</code></td><td>Mengo (southwest)</td><td>Mulago</td><td>— unassigned</td></tr>
+      <tr><td><code>UBE 004A</code></td><td>Bukoto (north)</td><td>Mulago</td><td>— unassigned</td></tr>
+      <tr><td><code>UBE 005A</code></td><td>Bweyogerere (far east)</td><td>Healthstone</td><td>— unassigned</td></tr>
+    </table>
+  </section>
+
+  <section class="card" id="caveats">
+    <h2 class="section-title"><span class="num">7</span> Known Caveats — Not Bugs</h2>
+    <ul>
+      <li>On Flutter <b>web</b>, you may see a console warning/assertion related to <code>window.dart</code> when GPS starts — this is a known Flutter web/geolocator quirk and does not affect functionality. GPS only matters on the Android driver app for a real demo.</li>
+      <li>The hospital ETA is a straight-line distance ÷ average speed estimate, not a real routing calculation — times will be optimistic compared to real driving time.</li>
+    </ul>
+  </section>
+
+</div>
+
+<footer>
+  ERAMS — Kyambogo University Final Year Project · See <code>docs/COMPLETED_WORK.md</code> for live build status and <code>docs/ERAMS_TECHNICAL_BUILD_PLAN.md</code> for technical detail.
+</footer>
+
+</body>
+</html>

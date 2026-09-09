@@ -1,0 +1,79 @@
+# Flutter/Dart build artifacts
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+devtools_options.yaml
+
+# Dart generated code (uncomment if not committing generated files)
+# *.g.dart
+# *.freezed.dart
+# *.mocks.dart
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/launch.json
+*.iml
+*.ipr
+*.iws
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Environment / secrets — NEVER commit these
+.env
+*.env.local
+.env.json
+
+# Firebase
+firebase-debug.log
+.firebase/
+*-firebase-adminsdk*.json
+.agents/
+skills-lock.json
+
+# Supabase local dev
+supabase/.temp/
+supabase/.branches/
+
+# Android — commit the android/ directory but ignore generated/local files within it
+**/android/.gradle/
+**/android/local.properties
+**/android/key.properties
+**/android/captures/
+**/.android/
+
+# iOS — commit the ios/ directory but ignore generated/local files within it
+**/.ios/
+**/ios/.symlinks/
+**/ios/Pods/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Generated.xcconfig
+
+# macOS desktop (stretch target — not committed for now)
+macos/
+
+# Windows desktop (stretch target — not committed for now)
+windows/
+
+# Linux desktop
+linux/
+
+# Coverage
+coverage/
+
+# Logs
+*.log
+
+# Test outputs
+test-results/
+
+# Node (debug/repro tooling — not part of the Flutter app)
+node_modules/
+package-lock.json

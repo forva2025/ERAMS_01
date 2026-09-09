@@ -1,0 +1,18 @@
+# Supabase local dev config
+# Run `supabase start` to spin up a local Supabase instance for development.
+# See: https://supabase.com/docs/guides/cli/config
+
+[api]
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+port = 54323
+
+[inbucket]
+port = 54324
+
+[storage]
+file_size_limit = "50MiB"

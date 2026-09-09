@@ -1,0 +1,36 @@
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "erams-98eb2",
+          "appId": "1:840423219815:android:5afad3512380df1609aac2",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/core/config/firebase_options.dart": {
+          "projectId": "erams-98eb2",
+          "configurations": {
+            "android": "1:840423219815:android:5afad3512380df1609aac2",
+            "web": "1:840423219815:web:d5c4dbab9887ef5009aac2"
+          }
+        }
+      }
+    }
+  }
+}
